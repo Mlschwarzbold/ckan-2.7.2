@@ -1,0 +1,17 @@
+# Temporary public edge for browser access (tear down after viewing).
+# Usage: docker compose -f docker-compose.yml -f docker-compose.edge.yml up -d
+# Only `ckan` is routed; db/solr/datapusher stay internal.
+networks:
+  core-proxy:
+    external: true
+services:
+  ckan:
+    networks:
+      - default
+      - core-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ckan-test.rule=Host(`${CKAN_EDGE_HOST:-ckan-test.mls.cloud-ip.cc}`)"
+      - "traefik.http.routers.ckan-test.entrypoints=web,websecure"
+      - "traefik.http.routers.ckan-test.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ckan-test.loadbalancer.server.port=5000"
