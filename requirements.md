@@ -8,7 +8,7 @@ Source of truth for decisions: `plan.md`.
 3. Boot auto-creates 1 admin user + 1 fixed API token, no manual clicks.
 4. ETL path must work: API create dataset/resource → upload PDF/.zip via `ckanapi` → API create datastore+views → `COPY` ~500k rows into datastore from remote Hop host.
 5. Services: `ckan` + `db` (PG 9.6, `ckan` + `datastore` DBs) + `solr` + `datapusher` (present, unused).
-6. Plugins: `datastore`, `filestore`, `recline_view`, `datapusher` only.
+6. Plugins: `datastore`, `datapusher`, `recline_view` (+ Keitaro-baked `image_view`, `text_view`). File uploads via core `CKAN_STORAGE_PATH`, NOT a `filestore` plugin (doesn't exist in 2.7.x — crashes boot).
 
 ## Non-functional
 1. Portable: no hardcoded IPs/hostnames; LAN/host config in `.env` only. Must be movable off this VPS.

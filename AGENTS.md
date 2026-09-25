@@ -6,7 +6,7 @@ Throwaway Dockerized CKAN 2.7.2 mimicking prod, for testing Hop+Python ETL (Acti
 ## Structure
 - `plan.md` — shared understanding from grilling: decisions, scope, deferred items, unresolved frontier. Read first.
 - `requirements.md` — v1 functional/non-functional requirements + non-goals.
-- `docker-compose.yml` + `.env` (when created) — entire instance definition. All host-specific values in `.env`, never hardcoded.
+- `docker-compose.yml` + `.env.example` — entire instance definition (copy to `.env`, gitignored). All host-specific values in `.env`, never hardcoded.
 - `scripts/` (when created) — bootstrap (admin/token, datastore perms) and seed scripts only. No manual setup steps.
 
 ## Git
