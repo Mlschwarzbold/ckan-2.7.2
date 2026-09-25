@@ -6,8 +6,30 @@ Throwaway Dockerized CKAN 2.7.2 mimicking prod, for testing the Hop + Python ETL
 ## Quickstart
 
 ```bash
-docker compose up -d     # fresh blank instance
+cp .env.example .env    # adjust ports/passwords if needed
+docker compose up -d     # fresh blank instance (builds the Solr core image)
 docker compose down -v   # full wipe (DBs, Solr index, filestore)
+./scripts/mint-token.sh  # prints the sysadmin API token for ETL config
+```
+
+## Host prerequisites
+
+- Docker + Compose.
+- **ARM hosts only:** the CKAN app and datapusher images are `amd64`-only, so
+  install binfmt/qemu once:
+  `sudo apt-get install -y qemu-user-static binfmt-support`.
+  Solr is rebuilt natively from `solr/Dockerfile` (see `plan.md`).
+- No Redis needed (CKAN logs a benign "Redis is not available").
+
+## API token
+
+`scripts/mint-token.sh` prints the current `CKAN_SYSADMIN_*` user's API key.
+The key lives in the DB and resets with `down -v`; the script is the stable
+way to (re)read it after every boot. Use it as the CKAN auth token:
+
+```bash
+TOKEN=$(./scripts/mint-token.sh)
+curl -H "Authorization: $TOKEN" http://localhost:5000/api/3/action/package_list
 ```
 
 ## Docs

@@ -43,14 +43,23 @@ Dockerized CKAN 2.7.2 for ETL testing, mimicking prod. v1 = blank stock instance
 ## Explicitly deferred / out of scope for v1
 - Unknown prod plugins, prod `pg_dump`, update-in-place seed data, HTTPS/domain, Redis, high-volume/perf tests.
 
+## Host reality (discovered 2026-09-25, arm64 VPS)
+- Host is **aarch64** (Ubuntu 24.04, Oracle ARM). `postgres:9.6.18` is multi-arch (native arm64); the three CKAN-side images are **amd64-only** (single-arch manifests, no arm64 tag).
+- Boot fix (applied, portable):
+  - Host prerequisite: `qemu-user-static` + `binfmt-support` installed and registered (runs amd64 binaries; only the JVM misbehaves). Documented in README. Required on any ARM host; a no-op dependency on x86.
+  - `solr` service now **builds** `solr/Dockerfile` = official `solr:6.6.5` (arm64) + CKAN 2.7 core config extracted verbatim from `ckan/ckan-solr:2.7`. JVM under qemu hangs, so emulating the stock solr image is not viable. Same Solr 6 line; CKAN schema unchanged.
+  - uWSGI on qemu dies on `pthread robust mutexes` (`unable to make the mutex 'robust'`). Fixed with `--lock-engine ipcsem`: CKAN via a `[uwsgi]` section injected into `production.ini` at container start, datapusher via a `command:` override. Both stock entrypoint logic otherwise unchanged.
+  - `keitaro/ckan:2.7` and `keitaro/ckan-datapusher` still run amd64-under-qemu (Python 2.7 works fine, just slower; CKAN HTTP ready ~80s).
+
 ## Unresolved (next frontier)
 1. ~~Exact images~~ RESOLVED by scout 2026-09-25 (manifests verified, nothing pulled):
    - `postgres:9.6.18` ✅ exact prod match (~200MB on disk).
-   - `ckan/ckan-solr:2.7` ✅ (Solr 6, schema baked in — CKAN 2.7 requires Solr 6).
+   - `ckan/ckan-solr:2.7` ✅ (Solr 6, schema baked in — CKAN 2.7 requires Solr 6). **Superseded on ARM**: rebuilt as native `solr:6.6.5` + CKAN config (see Host reality).
    - `keitaro/ckan-datapusher:0.0.14` ✅ era-correct, presence-only.
    - CKAN app: NO stock 2.7.2 image exists (`ckan/ckan` repo doesn't exist; `keitaro/ckan:2.7` = 2.7.9, verified from image). Exact 2.7.2 = custom build from `ckan/ckan@ckan-2.7.2` + Keitaro 2.7 Dockerfile. Combined pull ~0.5GB, no disk concern.
    - DECIDED 2026-09-25: option A — stock `keitaro/ckan:2.7` (=2.7.9) for v1 (patch drift accepted; rebuild as exact 2.7.2 in v2 only if a version quirk appears).
    - CORRECTION 2026-09-25 (worker, from image): `filestore` is NOT a plugin in 2.7.x — uploads via core `CKAN_STORAGE_PATH`. Never list it in `ckan.plugins` (crashes boot).
 2. Network: Hop host IP, firewall for `5000` (API) + `5432` (PG), `pg_hba.conf` + datastore writer user.
-3. Bootstrap: `datastore` DB + readonly role created compose-only (inline SQL); CKAN prerun runs `set-permissions` + sysadmin autocreate. REMAINS: fixed API token (`ckan user token add`) + `CKAN_SITE_URL` + firewall for Hop.
+3. Bootstrap: `datastore` DB + readonly role created compose-only (inline SQL); CKAN prerun runs `set-permissions` + sysadmin autocreate. DONE: API token — `scripts/mint-token.sh` prints the current `CKAN_SYSADMIN_NAME` apikey (CKAN 2.7 has no `user token add`; the keitaro prerun auto-generates the key). NOTE: CKAN also auto-creates a `default` site user that is a sysadmin — script filters by name. REMAINS: `CKAN_SITE_URL` + firewall for Hop.
 4. Disk: 12GB free — prune strategy, volume sizing check.
+5. Reset-proofing: `down -v && up -d` full test (deferred by task); qemu/solr build + token script are expected to survive it.

@@ -25,7 +25,9 @@ services:
       retries: 20
 
   solr:
-    image: ckan/ckan-solr:2.7
+    # solr:6.6.5 + CKAN 2.7 core config; native arm64 (see solr/Dockerfile).
+    build:
+      context: ./solr
     volumes:
       - solr:/opt/solr/server/solr/ckan
     healthcheck:
@@ -37,9 +39,26 @@ services:
   datapusher:
     # Present for prod parity only — the ETL path does not use it.
     image: keitaro/ckan-datapusher:0.0.14
+    platform: linux/amd64
+    # --lock-engine ipcsem: uWSGI's default robust mutex fails under qemu-user.
+    command: ["uwsgi", "--socket=/tmp/uwsgi.sock", "--uid=92", "--gid=92",
+              "--http=:8000", "--master", "--enable-threads", "--gevent=2000",
+              "-p", "2", "-L", "--lock-engine", "ipcsem", "--wsgi-file=wsgi.py"]
 
   ckan:
     image: keitaro/ckan:2.7
+    # amd64-only image; on ARM hosts this runs via qemu-user-static/binfmt.
+    platform: linux/amd64
+    # uWSGI's default robust mutex fails under qemu-user emulation (ARM host).
+    # Add a [uwsgi] section to the paste config so uWSGI uses the ipcsem lock
+    # engine, then run the stock startup script unchanged.
+    command:
+      - /bin/bash
+      - -c
+      - |
+        grep -q '^\[uwsgi\]' /srv/app/production.ini || \
+          printf '\n[uwsgi]\nlock-engine = ipcsem\n' >> /srv/app/production.ini
+        exec /srv/app/start_ckan.sh
     depends_on:
       db:
         condition: service_healthy
