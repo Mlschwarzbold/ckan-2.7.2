@@ -1,0 +1,16 @@
+# Secrets / host-local (never commit)
+.env
+
+# Python (future scripts/)
+__pycache__/
+*.pyc
+.venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local test artifacts
+*.log
+/tmp/
