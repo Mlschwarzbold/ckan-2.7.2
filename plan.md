@@ -40,7 +40,8 @@ Dockerized CKAN 2.7.2 for ETL testing, mimicking prod. v1 = blank stock instance
 - Lives on this VPS for now, portable elsewhere later (no hardcoded IPs, use `.env`).
 - Must come up/down with one command. HTTPS deferred.
 
-## Temporary public edge (added 2026-09-25, TEAR DOWN after viewing)
+## Temporary public edge (UP 2026-09-25, DOWN same day after verification)
+- Overlay file `docker-compose.edge.yml` retained (inert unless passed with `-f`); no route active, `ckan-test` returns 404. Local `.env` back to `CKAN_SITE_URL=http://localhost:5000`. Re-expose with `docker compose -f docker-compose.yml -f docker-compose.edge.yml up -d` + SITE_URL flip if needed again.
 - `docker-compose.edge.yml` routes only `ckan` via Traefik (`core-proxy` net) → `https://ckan-test.mls.cloud-ip.cc`, LE cert valid to 2026-12-24. db/solr/datapusher never exposed.
 - Local `.env` currently sets `CKAN_SITE_URL=https://ckan-test.mls.cloud-ip.cc` — flip back to `http://localhost:5000` + recreate when Hop testing starts.
 - Teardown: `docker compose -f docker-compose.yml -f docker-compose.edge.yml down` then `up -d` without the overlay (or just `down` the edge). Delete overlay + hostname when done.
