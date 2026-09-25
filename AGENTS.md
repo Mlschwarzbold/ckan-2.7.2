@@ -7,7 +7,8 @@ Throwaway Dockerized CKAN 2.7.2 mimicking prod, for testing Hop+Python ETL (Acti
 - `plan.md` — shared understanding from grilling: decisions, scope, deferred items, unresolved frontier. Read first.
 - `requirements.md` — v1 functional/non-functional requirements + non-goals.
 - `docker-compose.yml` + `.env.example` — entire instance definition (copy to `.env`, gitignored). All host-specific values in `.env`, never hardcoded.
-- `scripts/` (when created) — bootstrap (admin/token, datastore perms) and seed scripts only. No manual setup steps.
+- `scripts/` — bootstrap (admin/token) scripts only. No manual setup steps.
+- `tests/etl_proof.sh` — rerunnable ETL-path proof (dataset → upload → datastore → direct COPY → view).
 
 ## Git
 Remote: `git@github.com:Mlschwarzbold/ckan-2.7.2.git` (branch `main`). Auth is a repo deploy key, private part at `~/.ssh/ckan_etl_deploy` (never commit it). Prefix every git network op with:
@@ -24,3 +25,4 @@ Commit `plan.md`/`requirements.md`/`AGENTS.md` + compose/scripts together — a 
 3. Keep it portable: no VPS IPs/hostnames in compose files; use `.env`.
 4. Don't reintroduce DataPusher into the ETL path; container exists for parity only.
 5. Update `plan.md` when a decision changes; keep `requirements.md` in sync.
+6. Workers must log milestones to `/tmp/<task>.log` (one line per stage) — the human follows progress via `tail -f` since this is a headless session with no live subagent UI.
